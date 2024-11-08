@@ -302,4 +302,176 @@ int main() {
 }
 
 //-----
+//НОВОЕ
+#include <iostream> // Подключение библиотеки для ввода-вывода
+#include <string> // Подключение библиотеки для работы со строками
+#include <vector> // Подключение библиотеки для работы с векторами
+#include <fstream> // Подключение библиотеки для работы с файлами
+#include <sstream> // Подключение библиотеки для работы с потоками строк
+#include <cstdlib> // Подключение библиотеки для работы с функциями C стандартной библиотеки
+#include <sys/wait.h> // Подключение библиотеки для работы с процессами
+#include <unistd.h> // Подключение библиотеки для работы с системными вызовами
+#include <signal.h> // Подключение библиотеки для работы с сигналами
 
+using namespace std;
+
+// Обработчик сигнала SIGHUP
+void sigupHandler(int sig) {
+    cout << "Configuration reloaded" << endl; // Вывод сообщения о перезагрузке конфигурации
+}
+
+// Проверка валидности команды
+bool isCommandValid(const string& command) {
+    return (command == "echo" || command == "exit" || command == "\\q" || command == "\\e" || command == "\\l" || command == "\\cron"); // Проверка, является ли команда допустимой
+}
+
+// Функция для выполнения команды echo
+void executeEcho(stringstream& ss) {
+    string arg;
+    while (ss >> arg) { // Чтение аргументов из потока
+        cout << arg << " "; // Вывод аргументов на экран
+    }
+    cout << endl; // Переход на новую строку
+}
+
+// Функция для вывода переменной окружения
+void printEnvVariable(stringstream& ss) {
+    string varName;
+    ss >> varName; // Чтение имени переменной из потока
+    if (varName.empty()) {
+        cout << "Где имя переменной?" << endl; // Сообщение об ошибке, если имя переменной не указано
+    }
+    else {
+        const char* varValue = getenv(varName.c_str()); // Получение значения переменной окружения
+        if (varValue != nullptr) {
+            cout << varValue << endl; // Вывод значения переменной
+        }
+        else {
+            cout << "Переменная окружения не найдена." << endl; // Сообщение об ошибке, если переменная не найдена
+        }
+    }
+}
+
+// Функция для получения информации о разделах
+void listPartitions() {
+    system("lsblk"); // Выполнение команды для отображения информации о разделах
+}
+
+// Функция для выполнения бинарника
+void executeBinary(stringstream& ss) {
+    string binary;
+    ss >> binary; // Чтение имени бинарного файла из потока
+    if (binary.empty()) {
+        cout << "Укажите бинарник для выполнения." << endl; // Сообщение об ошибке, если имя бинарника не указано
+        return;
+    }
+    pid_t pid = fork(); // Создание нового процесса
+    if (pid == 0) {
+        execlp(binary.c_str(), binary.c_str(), (char*)nullptr); // Выполнение бинарного файла
+        perror("Ошибка выполнения бинарника"); // Сообщение об ошибке, если выполнение не удалось
+        exit(EXIT_FAILURE); // Завершение дочернего процесса с ошибкой
+    } else if (pid < 0) {
+        perror("Ошибка fork"); // Сообщение об ошибке, если создание процесса не удалось
+    } else {
+        wait(nullptr); // Ожидание завершения дочернего процесса
+    }
+}
+
+// Функция для подключения VFS
+void connectVFS() {
+    system("mount -t vfs /tmp/vfs"); // Выполнение команды для подключения виртуальной файловой системы
+}
+
+// Основная функция
+int main() {
+    string inputString; // Переменная для хранения введенной строки
+    vector<string> commandHistory; // Вектор для хранения истории команд
+    ifstream historyFile("history.txt"); // Открытие файла истории команд
+    string line;
+
+    // Чтение истории команд из файла
+    while (getline(historyFile, line)) {
+        commandHistory.push_back(line); // Добавление строки в историю команд
+    }
+    historyFile.close(); // Закрытие файла
+
+    // Регистрация обработчика сигнала SIGHUP
+    signal(SIGHUP, sigupHandler); // Установка обработчика сигнала
+
+    // Основной цикл для ввода команд
+    while (true) {
+        cout << "> "; // Вывод приглашения для ввода команды
+        if (!getline(cin, inputString)) {
+            break; // Выход по Ctrl+D
+        }
+
+        commandHistory.push_back(inputString); // Добавление введенной команды в историю
+
+        if (inputString == "exit" || inputString == "\\q") {
+            break; // Выход из программы
+        }
+
+        stringstream ss(inputString); // Создание потока для обработки введенной строки
+        string command;
+        ss >> command; // Чтение команды из потока
+
+        if (isCommandValid(command)) { // Проверка валидности команды
+            if (command == "echo") {
+                executeEcho(ss); // Выполнение команды echo
+            }
+            else if (command == "\\e") {
+                printEnvVariable(ss); // Вывод переменной окружения
+            }
+            else if (command == "\\l") {
+                listPartitions(); // Вывод информации о разделах
+            }
+            else if (command == "\\cron") {
+                connectVFS(); // Подключение VFS
+            }
+            else {
+                executeBinary(ss); // Выполнение бинарного файла
+            }
+        }
+        else {
+            cerr << "Команда не найдена: " << command << endl; // Сообщение об ошибке
+        }
+    }
+
+    // Сохранение истории в файл
+    ofstream outFile("history.txt"); // Открытие файла для записи истории команд
+    for (const auto& command : commandHistory) {
+        outFile << command << endl; // Запись каждой команды в файл
+    }
+    outFile.close(); // Закрытие файла
+
+    return 0; // Завершение программы
+}
+//исправление бинарника
+void executeBinary(stringstream& ss) {
+    string binary;
+    ss >> binary; // Чтение имени бинарного файла из потока
+    if (binary.empty()) {
+        cout << "Укажите бинарник для выполнения." << endl; // Сообщение об ошибке, если имя бинарника не указано
+        return;
+    }
+    
+    // Добавление './' для выполнения бинарника из текущего каталога
+    if (binary[0] != '/') {
+        binary = "./" + binary;
+    }
+
+    pid_t pid = fork(); // Создание нового процесса
+    if (pid == 0) {
+        execlp(binary.c_str(), binary.c_str(), (char*)nullptr); // Выполнение бинарного файла
+        perror("Ошибка выполнения бинарника"); // Сообщение об ошибке, если выполнение не удалось
+        exit(EXIT_FAILURE); // Завершение дочернего процесса с ошибкой
+    } else if (pid < 0) {
+        perror("Ошибка fork"); // Сообщение об ошибке, если создание процесса не удалось
+    } else {
+        wait(nullptr); // Ожидание завершения дочернего процесса
+    }
+}
+//исправление последнего
+void connectVFS() {
+    system("sudo mount -t tmpfs tmpfs /tmp/vfs"); // Выполнение команды для подключения временной файловой системы
+}
