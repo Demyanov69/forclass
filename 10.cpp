@@ -1,32 +1,38 @@
 #include <iostream>
-#include <fstream>
 #include <string>
-#include <sstream>
+#include <array>
+#include <cstdio> // для popen() и pclose()
+#include <stdexcept>
+
 
 using namespace std;
 
+
 int main() {
-    ifstream partitionsFile("/proc/partitions");
-    string line;
+    array<char, 128> buffer;
+    string command = "lsblk -o NAME,FSTYPE,SIZE,MOUNTPOINT"; // команда для получения информации о разделах
+    FILE *stream = popen(command.c_str(), "r");
 
-    if (!partitionsFile.is_open()) {
-        cerr << "Error opening /proc/partitions" << endl;
-        return 1;
+    if (stream == nullptr) {
+        throw runtime_error("Ошибка при вызове popen()");
     }
 
-    // Пропускаем заголовок
-    getline(partitionsFile, line);
-
-    cout << "Major Minor  #blocks  name" << endl; // Заголовок для удобства чтения
-
-    while (getline(partitionsFile, line)) {
-        stringstream ss(line);
-        string major, minor, blocks, name;
-        ss >> major >> minor >> blocks >> name;
-        cout << major << "  " << minor << "  " << blocks << "  " << name << endl;
+    cout << "NAME\tFSTYPE\tSIZE\tMOUNTPOINT" << endl; // заголовок таблицы
+    while (fgets(buffer.data(), buffer.size(), stream) != nullptr) {
+        cout << buffer.data();
     }
 
-    partitionsFile.close();
+    int returnCode = pclose(stream);
+    if (returnCode == -1) {
+        perror("pclose() failed");
+        return 1; //Возвращаем код ошибки
+    }
+    if (WIFEXITED(returnCode) && WEXITSTATUS(returnCode) != 0) {
+        cerr << "lsblk завершилась с кодом ошибки: " << WEXITSTATUS(returnCode) << endl;
+        return 1; //Возвращаем код ошибки
+    }
+
+
     return 0;
 }
 
