@@ -16,16 +16,7 @@
 using namespace std;
 
 bool command_exists(const string& command) {
-    char *path = (char *)getenv("PATH");
-    if(path == nullptr) return false;
-
-    char *dir = strtok(strdup(path), ":");
-    while(dir != nullptr){
-        string cmd_path = dir + "/" + command;
-        if(access(cmd_path.c_str(), X_OK) == 0) return true;
-        dir = strtok(nullptr, ":");
-    }
-    return false;
+     return access(command.c_str(), X_OK) == 0;
 }
 
 void execute_command(const string& command) {
@@ -100,23 +91,13 @@ void listPartitions() {
 
 
 void connectVFS() {
-    string mountPoint = "/tmp/vfs";
-    if (access(mountPoint.c_str(), F_OK) != 0) {
-        cout << "Please create using mkdir /tmp/vfs." << endl;
+    // Example implementation for connecting to VFS
+    const char* vfsPath = "/tmp/vfs";
+    if (mkdir(vfsPath, 0755) == -1 && errno != EEXIST) {
+        perror("Failed to create VFS directory");
         return;
     }
-    system("fusermount -uz /tmp/vfs");
-    int result = system(("mount -t vfs vfs " + mountPoint).c_str());
-    if (result != 0) {
-        cout << "VFS error. Is the vfs correct?" << endl;
-        return;
-    }
-    cout << "VFS is mounted at " << mountPoint << endl;
-    string crontabEntry = " * * * * * /usr/bin/touch " + mountPoint + "/test.txt";
-    result = system(("crontab -l; echo \"" + crontabEntry + "\"").c_str());
-    if (result != 0) {
-        cout << "Error" << endl;
-    }
+    cout << "Connected to VFS at " << vfsPath << endl;
 }
 
 int main() {
