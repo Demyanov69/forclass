@@ -8,6 +8,163 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <cstring>
+
+using namespace std;
+
+void sigupHandler(int sig) {
+    cout << "<<CONFIG RELOADED>>" << endl;
+}
+
+void executeEcho(stringstream& ss) {
+    string arg;
+    while (ss >> arg) {
+        cout << arg << " ";
+    }
+    cout << endl;
+}
+
+void printEnvVariable(stringstream& ss) {
+    string varName;
+    ss >> varName;
+    if (varName.empty()) {
+        cout << "<<Where is the variable name?>>" << endl;
+    } else {
+        const char* varValue = getenv(varName.c_str());
+        if (varValue != nullptr) {
+            cout << varValue << endl;
+        } else {
+            cout << "I found nothing :(" << endl;
+        }
+    }
+}
+
+void listPartitions() {
+    int fd = open("/dev/sda", O_RDONLY);
+    if (fd < 0) {
+        perror("Failed to open /dev/sda");
+        return;
+    }
+
+    unsigned char buffer[512];
+    if (read(fd, buffer, sizeof(buffer)) != sizeof(buffer)) {
+        perror("Failed to read the first sector");
+        close(fd);
+        return;
+    }
+
+    close(fd);
+
+    // Check for the boot signature at the end of the first sector
+    if (buffer[510] == 0x55 && buffer[511] == 0xAA) {
+        cout << "The first sector is bootable." << endl;
+    } else {
+        cout << "The first sector is not bootable." << endl;
+    }
+}
+
+void executeBinary(const string& command) {
+    if (fork() == 0) {
+        char* argv[2] = {const_cast<char*>(command.c_str()), nullptr};
+        execvp(argv[0], argv);
+        perror("execvp failed");
+        exit(1);
+    } else {
+        wait(nullptr);
+    }
+}
+
+void connectVFS() {
+    string mountPoint = "/tmp/vfs";
+    if (access(mountPoint.c_str(), F_OK) != 0) {
+        cout << "Please create using mkdir /tmp/vfs." << endl;
+        return;
+    }
+    system("fusermount -uz /tmp/vfs");
+    int result = system(("mount -t vfs vfs " + mountPoint).c_str());
+    if (result != 0) {
+        cout << "VFS error. Is the vfs correct?" << endl;
+        return;
+    }
+    cout << "VFS is mounted at " << mountPoint << endl;
+    string crontabEntry = " * * * * * /usr/bin/touch " + mountPoint + "/test.txt";
+    result = system(("crontab -l; echo \"" + crontabEntry + "\"").c_str());
+    if (result != 0) {
+        cout << "Error" << endl;
+    }
+}
+
+int main() {
+    string inputString;
+    vector<string> commandHistory;
+    ifstream historyFile("history.txt");
+    string line;
+
+    while (getline(historyFile, line)) {
+        commandHistory.push_back(line);
+    }
+    historyFile.close();
+
+    signal(SIGHUP, sigupHandler);
+
+    while (true) {
+        cout << "-> ";
+        if (!getline(cin, inputString)) {
+            break;
+        }
+        commandHistory.push_back(inputString);
+        if (inputString == "exit" || inputString == "\\q") {
+            break;
+        }
+        stringstream ss(inputString);
+        string command;
+        ss >> command;
+        if (command == "echo") {
+            executeEcho(ss);
+        } else if (command == "\\e") {
+            printEnvVariable(ss);
+        } else if (command == "\\l") {
+            listPartitions();
+        } else if (command == "\\cron") {
+            connectVFS();
+        } else if (command.empty()) {
+            cout << "<<Please enter a command>>" << endl;
+        } else {
+            executeBinary(command);
+        }
+    }
+
+    ofstream outFile("history.txt");
+    for (const auto& command : commandHistory) {
+        outFile << command << endl;
+    }
+    outFile.close();
+    return 0;
+}
+
+
+
+-----------------------
+
+
+
+ДАЛЬШЕ
+НЕ
+КОПИРОВАТЬ
+
+
+-----------------------
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <sstream>
+#include <cstdlib>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <signal.h>
+#include <errno.h>
 #include <sys/types.h> // для pid_t
 #include <stdexcept> // для runtime_error
 
