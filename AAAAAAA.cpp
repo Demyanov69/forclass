@@ -10,8 +10,42 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <cstring>
+#include <sys/types.h> // for pid_t
+
 
 using namespace std;
+
+bool command_exists(const string& command) {
+    char *path = (char *)getenv("PATH");
+    if(path == nullptr) return false;
+
+    char *dir = strtok(strdup(path), ":");
+    while(dir != nullptr){
+        string cmd_path = dir + "/" + command;
+        if(access(cmd_path.c_str(), X_OK) == 0) return true;
+        dir = strtok(nullptr, ":");
+    }
+    return false;
+}
+
+void execute_command(const string& command) {
+    if (!command_exists(command)) {
+        cerr << "Command not found: " << command << endl;
+        return;
+    }
+    pid_t pid = fork();
+    if (pid == 0) {
+        char *args[] = {const_cast<char*>(command.c_str()), nullptr};
+        execvp(args[0], args);
+        perror("execvp failed");
+        exit(1);
+    } else if (pid > 0) {
+        wait(nullptr);
+    } else {
+        perror("fork failed");
+    }
+}
+
 
 void sigupHandler(int sig) {
     cout << "<<CONFIG RELOADED>>" << endl;
@@ -64,16 +98,6 @@ void listPartitions() {
     }
 }
 
-void executeBinary(const string& command) {
-    if (fork() == 0) {
-        char* argv[2] = {const_cast<char*>(command.c_str()), nullptr};
-        execvp(argv[0], argv);
-        perror("execvp failed");
-        exit(1);
-    } else {
-        wait(nullptr);
-    }
-}
 
 void connectVFS() {
     string mountPoint = "/tmp/vfs";
@@ -131,7 +155,7 @@ int main() {
         } else if (command.empty()) {
             cout << "<<Please enter a command>>" << endl;
         } else {
-            executeBinary(command);
+            execute_command(command); // Use the improved execute_command function
         }
     }
 
@@ -142,8 +166,6 @@ int main() {
     outFile.close();
     return 0;
 }
-
-
 
 -----------------------
 
