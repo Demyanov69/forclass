@@ -68,31 +68,42 @@ void printEnvVariable(stringstream& ss) {
 }
 
 void listPartitions() {
-    ifstream file("/dev/sda", ios::binary);
-    if (!file.is_open()) {
-        perror("Failed to open /dev/sda");
-        return;
-    }
+  int fd;
+  unsigned char buffer[512]; // Sector size - 512 bytes
+  bool bootable = false;
 
-    unsigned char buffer[512];
-    file.read(reinterpret_cast<char*>(buffer), sizeof(buffer));
-    if (!file.good()) {
-        cerr << "Failed to read the first sector" << endl;
-        file.close();
-        return;
-    }
-    file.close();
+  // Open the disk in read-only mode
+  fd = open("/dev/sda", O_RDONLY);
+  if (fd == -1) {
+    perror("Error opening disk");
+    return;
+  }
 
-    // Correctly interpret the boot signature as a little-endian 16-bit integer
-    uint16_t signature = *reinterpret_cast<uint16_t*>(&buffer[510]);
+  // Read the first sector (512 bytes)
+  ssize_t bytesRead = read(fd, buffer, 512);
+  if (bytesRead == -1) {
+    perror("Error reading from disk");
+    close(fd);
+    return;
+  } else if (bytesRead != 512) {
+    cerr << "Failed to read the entire sector" << endl;
+    close(fd);
+    return;
+  }
 
-    if (signature == 0xAA55) {
-        cout << "The first sector is bootable." << endl;
-    } else {
-        cout << "The first sector is not bootable." << endl;
-    }
+  // Check for the boot signature (55AA) in the last two bytes of the sector
+  if (buffer[510] == 0x55 && buffer[511] == 0xAA) {
+    bootable = true;
+  }
+
+  close(fd);
+
+  if (bootable) {
+    cout << "/dev/sda: Bootable sector" << endl;
+  } else {
+    cout << "/dev/sda: Non-bootable sector" << endl;
+  }
 }
-
 
 struct Task {
     string command;
