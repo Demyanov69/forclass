@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <sys/types.h> // for pid_t
+#include <sys/stat.h> // Added this line
 
 
 using namespace std;
@@ -119,7 +120,7 @@ int main() {
             break;
         }
         commandHistory.push_back(inputString);
-        if (inputString == "exit" || inputString == "\\q") {
+        if (inputString == "exit" || inputString == "\q") {
             break;
         }
         stringstream ss(inputString);
@@ -127,11 +128,11 @@ int main() {
         ss >> command;
         if (command == "echo") {
             executeEcho(ss);
-        } else if (command == "\\e") {
+        } else if (command == "\e") {
             printEnvVariable(ss);
-        } else if (command == "\\l") {
+        } else if (command == "\l") {
             listPartitions();
-        } else if (command == "\\cron") {
+        } else if (command == "\cron") {
             connectVFS();
         } else if (command.empty()) {
             cout << "<<Please enter a command>>" << endl;
@@ -147,7 +148,6 @@ int main() {
     outFile.close();
     return 0;
 }
-
 -----------------------
 
 
