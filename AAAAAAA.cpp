@@ -91,14 +91,58 @@ void listPartitions() {
 }
 
 
+struct Task {
+    string command;
+    time_t scheduledTime; //Time_t for time representation
+    int interval; //in seconds, 0 for one-time tasks
+};
+
+
 void connectVFS() {
-    // Example implementation for connecting to VFS
     const char* vfsPath = "/tmp/vfs";
     if (mkdir(vfsPath, 0755) == -1 && errno != EEXIST) {
         perror("Failed to create VFS directory");
         return;
     }
     cout << "Connected to VFS at " << vfsPath << endl;
+
+    //Rudimentary task loading - Replace with proper config file parsing
+    ifstream taskFile("/tmp/vfs/tasks.txt");
+    string line;
+    map<time_t, vector<Task>> scheduledTasks; //Map for time-based scheduling
+
+    if (taskFile.is_open()) {
+        while (getline(taskFile, line)) {
+            stringstream ss(line);
+            Task task;
+            ss >> task.command >> task.scheduledTime >> task.interval; //Simple parsing, error handling needed
+            if(task.scheduledTime > 0) { //check if time is valid
+              scheduledTasks[task.scheduledTime].push_back(task);
+            } else {
+              cerr << "Invalid task time in config file: " << line << endl;
+            }
+        }
+        taskFile.close();
+    } else {
+        cerr << "Could not open tasks.txt" << endl;
+    }
+    
+    time_t currentTime;
+    while (true) {
+      currentTime = time(0);
+      for (auto const& [scheduledTime, tasks] : scheduledTasks) {
+          if (currentTime >= scheduledTime) {
+              for (const auto& task : tasks) {
+                  execute_command(task.command); //Execute tasks
+                  if(task.interval > 0){
+                    scheduledTasks[currentTime + task.interval].push_back(task);
+                  }
+              }
+              scheduledTasks.erase(scheduledTime); // Remove executed tasks.
+          }
+      }
+      sleep(1); // Check every second
+    }
 }
 
 int main() {
