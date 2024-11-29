@@ -68,23 +68,25 @@ void printEnvVariable(stringstream& ss) {
 }
 
 void listPartitions() {
-    int fd = open("/dev/sda", O_RDONLY);
-    if (fd < 0) {
+    ifstream file("/dev/sda", ios::binary);
+    if (!file.is_open()) {
         perror("Failed to open /dev/sda");
         return;
     }
 
     unsigned char buffer[512];
-    if (read(fd, buffer, sizeof(buffer)) != sizeof(buffer)) {
-        perror("Failed to read the first sector");
-        close(fd);
+    file.read(reinterpret_cast<char*>(buffer), sizeof(buffer));
+    if (!file.good()) {
+        cerr << "Failed to read the first sector" << endl;
+        file.close();
         return;
     }
+    file.close();
 
-    close(fd);
+    // Correctly interpret the boot signature as a little-endian 16-bit integer
+    uint16_t signature = *reinterpret_cast<uint16_t*>(&buffer[510]);
 
-    // Check for the boot signature at the end of the first sector
-    if (buffer[510] == 0x55 && buffer[511] == 0xAA) {
+    if (signature == 0xAA55) {
         cout << "The first sector is bootable." << endl;
     } else {
         cout << "The first sector is not bootable." << endl;
