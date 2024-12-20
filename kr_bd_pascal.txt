@@ -1,0 +1,311 @@
+1.
+
+CREATE TABLE Student (
+    id_student INT PRIMARY KEY,
+    fullname VARCHAR(255) NOT NULL,
+    gradebook_no INT NOT NULL,
+    date_in DATE NOT NULL,
+    phone VARCHAR(10)
+);
+
+CREATE TABLE Subject (
+    id_sub INT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(10) CHECK (type IN ('лк', 'лб')),
+    volume INT
+);
+
+CREATE TABLE Group_ (
+    id_group INT PRIMARY KEY,
+    group_no VARCHAR(255) NOT NULL,
+    year INT NOT NULL,
+    course INT CHECK (course BETWEEN 1 AND 10) NOT NULL,
+    semester VARCHAR(255),
+    specialty VARCHAR(255)
+);
+
+CREATE TABLE Structure_group (
+    id_student INT NOT NULL,
+    id_group INT NOT NULL,
+    FOREIGN KEY (id_student) REFERENCES Student(id_student),
+    FOREIGN KEY (id_group) REFERENCES Group_(id_group),
+    PRIMARY KEY (id_student, id_group)
+);
+
+CREATE TABLE Schedule (
+    id_group INT NOT NULL,
+    id_sub INT NOT NULL,
+    class_no INT CHECK (class_no BETWEEN 1 AND 10) NOT NULL,
+    classroom_no VARCHAR(255) NOT NULL,
+    weekday VARCHAR(255) NOT NULL,
+    FOREIGN KEY (id_group) REFERENCES Group_(id_group),
+    FOREIGN KEY (id_sub) REFERENCES Subject(id_sub),
+    PRIMARY KEY (id_group, id_sub, class_no)
+);
+
+INSERT INTO Student (id_student, fullname, gradebook_no, date_in, phone) VALUES
+(1, 'Умный стулент', 12345, TO_DATE('2024-12-12', 'YYYY-MM-DD'), '123-45-67');
+
+INSERT INTO Student (id_student, fullname, gradebook_no, date_in, phone) VALUES
+(2, 'Вася Пупкин', 67891, TO_DATE('2024-12-13', 'YYYY-MM-DD'), '765-43-21');
+
+INSERT INTO Student (id_student, fullname, gradebook_no, date_in, phone) VALUES
+(3, 'Дядя Толик', 23456, TO_DATE('2024-12-14', 'YYYY-MM-DD'), '111-22-33');
+
+INSERT INTO Subject (id_sub, name, type, volume) VALUES
+(1, 'Математика', 'лк', 100);
+
+INSERT INTO Subject (id_sub, name, type, volume) VALUES
+(2, 'Физика', 'лб', 110);
+
+INSERT INTO Subject (id_sub, name, type, volume) VALUES
+(3, 'Информатика', 'лк', 120);
+
+INSERT INTO Group_ (id_group, group_no, year, course, semester, specialty) VALUES
+(1, '101', 2024, 1, 'Первый', 'Математики');
+
+INSERT INTO Group_ (id_group, group_no, year, course, semester, specialty) VALUES
+(2, '102', 2024, 2, 'Первый', 'Физики');
+
+INSERT INTO Group_ (id_group, group_no, year, course, semester, specialty) VALUES
+(3, '103', 2024, 1, 'Второй', 'Программисты');
+
+INSERT INTO Structure_group (id_student, id_group) VALUES
+(1, 1);
+
+INSERT INTO Structure_group (id_student, id_group) VALUES
+(2, 2);
+
+INSERT INTO Structure_group (id_student, id_group)VALUES
+(3, 3);
+
+INSERT INTO Schedule (id_group, id_sub, class_no, classroom_no, weekday) VALUES
+(1, 1, 1, '101', 'Пн');
+
+INSERT INTO Schedule (id_group, id_sub, class_no, classroom_no, weekday) VALUES
+(1, 2, 1, '102', 'Вт');
+
+INSERT INTO Schedule (id_group, id_sub, class_no, classroom_no, weekday) VALUES
+(2, 1, 2, '201', 'Ср');
+
+SELECT * FROM Student;
+
+SELECT * FROM Subject;
+
+SELECT * FROM Group_;
+
+SELECT * FROM Structure_group;
+
+SELECT * FROM Schedule;
+
+--DROP TABLE Schedule CASCADE CONSTRAINTS;
+--DROP TABLE Structure_group CASCADE CONSTRAINTS;
+--DROP TABLE Group_ CASCADE CONSTRAINTS;
+--DROP TABLE Subject CASCADE CONSTRAINTS;
+--DROP TABLE Student CASCADE CONSTRAINTS;
+
+2.
+
+SELECT first_name, last_name, hire_date, salary, commission_pct 
+FROM employees 
+WHERE hire_date > TO_DATE('2005-10-22', 'YYYY-MM-DD') 
+ORDER BY hire_date;
+
+SELECT e.last_name, j.job_title, d.department_name 
+FROM employees e 
+JOIN jobs j ON e.job_id = j.job_id 
+JOIN departments d ON e.department_id = d.department_id 
+WHERE j.job_title = 'Programmer' AND d.location_id IN ( 
+    SELECT location_id FROM locations WHERE city = 'Southlake' 
+);
+
+SELECT l.city, COUNT(d.department_id) AS department_count 
+FROM locations l 
+JOIN departments d ON l.location_id = d.location_id 
+GROUP BY l.city 
+HAVING COUNT(d.department_id) > 1;
+
+SELECT e.* 
+FROM employees e 
+WHERE e.employee_id IN ( 
+    SELECT DISTINCT manager_id 
+    FROM employees 
+    WHERE manager_id IS NOT NULL 
+) AND e.hire_date > ( 
+    SELECT MIN(e2.hire_date) 
+    FROM employees e2 
+    WHERE e2.manager_id = e.employee_id 
+);
+
+3.
+
+CREATE TABLE КЛИЕНТЫ (
+    Код_клиента NUMBER PRIMARY KEY,
+    ФИО VARCHAR2(100),
+    Номер_паспорта VARCHAR2(200),
+    Серия_паспорта VARCHAR2(100),
+    Телефон VARCHAR2(150),
+    Адрес VARCHAR2(255),
+    E_mail VARCHAR2(100),
+    Пароль VARCHAR2(100)
+);
+
+CREATE TABLE СОТРУДНИКИ (
+    Код_сотрудника NUMBER PRIMARY KEY,
+    Серия_паспорта VARCHAR2(100),
+    ФИО VARCHAR2(100),
+    Номер_паспорта VARCHAR2(200),
+    Фото BLOB,
+    Дата_рождения DATE,
+    Телефон VARCHAR2(150),
+    Должность VARCHAR2(500),
+    Адрес VARCHAR2(255),
+    ЗП NUMBER
+);
+
+CREATE TABLE ЗАКАЗЫ (
+    Номер_заказа NUMBER PRIMARY KEY,
+    Код_клиента NUMBER,
+    Общая_стоимость NUMBER,
+    Адрес_доставки VARCHAR2(255),
+    Статус VARCHAR2(50),
+    Способ_оплаты VARCHAR2(500),
+    Код_сотрудника NUMBER,
+    FOREIGN KEY (Код_клиента) REFERENCES КЛИЕНТЫ(Код_клиента),
+    FOREIGN KEY (Код_сотрудника) REFERENCES СОТРУДНИКИ(Код_сотрудника)
+);
+
+CREATE TABLE ТОВАРЫ (
+    Артикул_товара NUMBER PRIMARY KEY,
+    Фото BLOB,
+    Стоимость NUMBER,
+    Описание VARCHAR2(255)
+);
+
+CREATE TABLE ДЕТАЛИЗАЦИЯ_ЗАКАЗА (
+    Номер_детализации NUMBER PRIMARY KEY,
+    Артикул_товара NUMBER,
+    Номер_заказа NUMBER,
+    Количество NUMBER,
+    Стоимость NUMBER,
+    FOREIGN KEY (Артикул_товара) REFERENCES ТОВАРЫ(Артикул_товара),
+    FOREIGN KEY (Номер_заказа) REFERENCES ЗАКАЗЫ(Номер_заказа)
+);
+
+CREATE TABLE ИСТОРИЯ_ЗАКАЗОВ (
+    Номер_истории NUMBER PRIMARY KEY,
+    Номер_заказа NUMBER,
+    Дата_и_время_формирования TIMESTAMP,
+    Код_клиента NUMBER,
+    Адрес VARCHAR2(255),
+    Статус VARCHAR2(500),
+    FOREIGN KEY (Номер_заказа) REFERENCES ЗАКАЗЫ(Номер_заказа),
+    FOREIGN KEY (Код_клиента) REFERENCES КЛИЕНТЫ(Код_клиента)
+);
+
+INSERT INTO КЛИЕНТЫ (Код_клиента, ФИО, Номер_паспорта, Серия_паспорта, Телефон, Адрес, E_mail, Пароль)
+VALUES (1, 'Иван Иванов', '1234567890', '1234', '+79991112233', 'ул. Пушкина, 1', 'ivan.ivan@mail.ru', 'pass123');
+
+INSERT INTO КЛИЕНТЫ (Код_клиента, ФИО, Номер_паспорта, Серия_паспорта, Телефон, Адрес, E_mail, Пароль)
+VALUES (2, 'Петр Петров', '9876543210', '5678', '+79994445566', 'пр. Мира, 10', 'petr.petrov@mail.ru', 'securepass');
+
+INSERT INTO КЛИЕНТЫ (Код_клиента, ФИО, Номер_паспорта, Серия_паспорта, Телефон, Адрес, E_mail, Пароль)
+VALUES (3, 'Сидор Сидоров', '0000000000', '0000', '+79997778899', 'ул. Октябрьская, 25', 'sidr.sidorov@mail.ru', 'qwerty');
+
+INSERT INTO СОТРУДНИКИ (Код_сотрудника, Серия_паспорта, ФИО, Номер_паспорта, Фото, Дата_рождения, Телефон, Должность, Адрес, ЗП)
+VALUES (101, '1111', 'Андрей Андреев', '1111222222', NULL, TO_DATE('1985-03-15', 'YYYY-MM-DD'), '+79991234567', 'Менеджер', 'ул. Пушкина, 1', 50000);
+
+INSERT INTO СОТРУДНИКИ (Код_сотрудника, Серия_паспорта, ФИО, Номер_паспорта, Фото, Дата_рождения, Телефон, Должность, Адрес, ЗП)
+VALUES (102, '2222', 'Елена Еленова', '2222333333', NULL, TO_DATE('1990-08-20', 'YYYY-MM-DD'), '+79997654321', 'Курьер', 'ул. Лермонтова, 5', 35000);
+
+INSERT INTO СОТРУДНИКИ (Код_сотрудника, Серия_паспорта, ФИО, Номер_паспорта, Фото, Дата_рождения, Телефон, Должность, Адрес, ЗП)
+VALUES (103, '3333', 'Сергей Сергеев', '3333444444', NULL, TO_DATE('1988-11-10', 'YYYY-MM-DD'), '+79991010101', 'Администратор', 'ул. Толстого, 12', 60000);
+
+INSERT INTO ЗАКАЗЫ (Номер_заказа, Код_клиента, Общая_стоимость, Адрес_доставки, Статус, Способ_оплаты, Код_сотрудника)
+VALUES (1, 1, 1500, 'ул. Ленина, 1', 'Обработка', 'Карта', 101);
+
+INSERT INTO ЗАКАЗЫ (Номер_заказа, Код_клиента, Общая_стоимость, Адрес_доставки, Статус, Способ_оплаты, Код_сотрудника)
+VALUES (2, 2, 2000, 'пр. Мира, 10', 'Доставка', 'Наличные', 102);
+
+INSERT INTO ЗАКАЗЫ (Номер_заказа, Код_клиента, Общая_стоимость, Адрес_доставки, Статус, Способ_оплаты, Код_сотрудника)
+VALUES (3, 3, 2500, 'ул. Октябрьская, 25', 'Выполнен', 'Безналичный', 103);
+
+INSERT INTO ТОВАРЫ (Артикул_товара, Фото, Стоимость, Описание)
+VALUES (1001, NULL, 500, 'Товар А');
+
+INSERT INTO ТОВАРЫ (Артикул_товара, Фото, Стоимость, Описание)
+VALUES (1002, NULL, 1000, 'Товар Б');
+
+INSERT INTO ТОВАРЫ (Артикул_товара, Фото, Стоимость, Описание)
+VALUES (1003, NULL, 1500, 'Товар В');
+
+INSERT INTO ДЕТАЛИЗАЦИЯ_ЗАКАЗА (Номер_детализации, Артикул_товара, Номер_заказа, Количество, Стоимость)
+VALUES (1, 1001, 1, 1, 500);
+
+INSERT INTO ДЕТАЛИЗАЦИЯ_ЗАКАЗА (Номер_детализации, Артикул_товара, Номер_заказа, Количество, Стоимость)
+VALUES (2, 1002, 2, 1, 1000);
+
+INSERT INTO ДЕТАЛИЗАЦИЯ_ЗАКАЗА (Номер_детализации, Артикул_товара, Номер_заказа, Количество, Стоимость)
+VALUES (3, 1003, 3, 1, 1500);
+
+INSERT INTO ИСТОРИЯ_ЗАКАЗОВ (Номер_истории, Номер_заказа, Дата_и_время_формирования, Код_клиента, Адрес, Статус)
+VALUES (1, 1, CURRENT_TIMESTAMP, 1, 'ул. Ленина, 1', 'Создан');
+
+INSERT INTO ИСТОРИЯ_ЗАКАЗОВ (Номер_истории, Номер_заказа, Дата_и_время_формирования, Код_клиента, Адрес, Статус)
+VALUES (2, 2, CURRENT_TIMESTAMP, 2, 'пр. Мира, 10', 'Обработан');
+
+INSERT INTO ИСТОРИЯ_ЗАКАЗОВ (Номер_истории, Номер_заказа, Дата_и_время_формирования, Код_клиента, Адрес, Статус)
+VALUES (3, 3, CURRENT_TIMESTAMP, 3, 'ул. Октябрьская, 25', 'Доставлен');
+
+SELECT * FROM КЛИЕНТЫ;
+
+SELECT * FROM СОТРУДНИКИ;
+
+SELECT * FROM ЗАКАЗЫ;
+
+SELECT * FROM ТОВАРЫ;
+
+SELECT * FROM ДЕТАЛИЗАЦИЯ_ЗАКАЗА;
+
+SELECT * FROM ИСТОРИЯ_ЗАКАЗОВ;
+
+DROP TABLE ИСТОРИЯ_ЗАКАЗОВ CASCADE CONSTRAINTS;
+
+DROP TABLE ДЕТАЛИЗАЦИЯ_ЗАКАЗА CASCADE CONSTRAINTS;
+
+DROP TABLE ЗАКАЗЫ CASCADE CONSTRAINTS;
+
+DROP TABLE СОТРУДНИКИ CASCADE CONSTRAINTS;
+
+DROP TABLE ТОВАРЫ CASCADE CONSTRAINTS;
+
+DROP TABLE КЛИЕНТЫ CASCADE CONSTRAINTS;
+
+CREATE OR REPLACE FUNCTION общая_сумма_заказов_клиента (
+  p_код_клиента КЛИЕНТЫ.Код_клиента%TYPE,
+  p_дата_начала DATE,
+  p_дата_окончания DATE
+) RETURN NUMBER
+IS
+  v_общая_сумма NUMBER := 0;
+BEGIN
+  SELECT SUM(О.Общая_стоимость)
+  INTO v_общая_сумма
+  FROM ЗАКАЗЫ О
+  JOIN ИСТОРИЯ_ЗАКАЗОВ И ON О.Номер_заказа = И.Номер_заказа
+  WHERE И.Код_клиента = p_код_клиента
+  AND И.Дата_и_время_формирования BETWEEN p_дата_начала AND p_дата_окончания
+  AND О.Статус = 'Выполнен';
+
+  RETURN v_общая_сумма;
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    RETURN 0;
+  WHEN OTHERS THEN
+    RAISE;
+END;
+/
+
+
+SELECT общая_сумма_заказов_клиента(3, TO_DATE('01.01.2023', 'DD.MM.RRRR'), TO_DATE('31.12.2024', 'DD.MM.RRRR')) FROM dual;
+
