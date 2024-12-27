@@ -1,0 +1,31 @@
+
+FROM nginx:latest
+
+# Удаляем стандартный файл конфигурации Nginx (если необходимо)
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Копируем HTML-файлы в директорию, обслуживаемую Nginx
+COPY 7 /usr/share/nginx/html/
+-------------------------------------------
+worker_processes 1;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    server {
+        listen 80;
+
+        # Обслуживание статического контента из директории
+        location / {
+            root /usr/share/nginx/html;  # Путь к статическим файлам
+            index index.html index.htm;    # Указываем, какие файлы использовать по умолчанию
+        }
+
+        # Прокси для flask_app
+        location /flask {
+            proxy_pass http://flask_app:5000;  # Прокси для flask_app
+        }
+    }
+}
