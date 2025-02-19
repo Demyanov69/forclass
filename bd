@@ -1,0 +1,113 @@
+// Constraints for Unique IDs (Primary Keys)
+CREATE CONSTRAINT employee_id_unique IF NOT EXISTS
+FOR (e:Employee) REQUIRE e.employee_id IS UNIQUE;
+
+CREATE CONSTRAINT department_id_unique IF NOT EXISTS
+FOR (d:Department) REQUIRE d.department_id IS UNIQUE;
+
+CREATE CONSTRAINT job_id_unique IF NOT EXISTS
+FOR (j:Job) REQUIRE j.job_id IS UNIQUE;
+
+CREATE CONSTRAINT location_id_unique IF NOT EXISTS
+FOR (l:Location) REQUIRE l.location_id IS UNIQUE;
+
+CREATE CONSTRAINT country_id_unique IF NOT EXISTS
+FOR (c:Country) REQUIRE c.country_id IS UNIQUE;
+
+CREATE CONSTRAINT region_id_unique IF NOT EXISTS
+FOR (r:Region) REQUIRE r.region_id IS UNIQUE;
+
+// Sample Data (adapt to your specific data)
+
+// Regions
+CREATE (r1:Region {region_id: 1, region_name: "Europe"});
+CREATE (r2:Region {region_id: 2, region_name: "Americas"});
+CREATE (r3:Region {region_id: 3, region_name: "Asia"});
+CREATE (r4:Region {region_id: 4, region_name: "Middle East and Africa"});
+
+// Countries
+CREATE (c1:Country {country_id: "US", country_name: "United States", region_id: 2});
+CREATE (c2:Country {country_id: "CA", country_name: "Canada", region_id: 2});
+CREATE (c3:Country {country_id: "UK", country_name: "United Kingdom", region_id: 1});
+CREATE (c4:Country {country_id: "JP", country_name: "Japan", region_id: 3});
+
+// Locations
+CREATE (l1:Location {location_id: 1000, street_address: "1297 Via Cola di Rie", postal_code: "00989", city: "Roma", state_province: null, country_id: "IT"});
+CREATE (l2:Location {location_id: 1100, street_address: "93091 Calle della Testa", postal_code: "10934", city: "Venice", state_province: null, country_id: "IT"});
+CREATE (l3:Location {location_id: 1200, street_address: "2017 Shinjuku-ku", postal_code: "1689", city: "Tokyo", state_province: "Tokyo Prefecture", country_id: "JP"});
+
+// Departments
+CREATE (d1:Department {department_id: 10, department_name: "Administration", manager_id: 200, location_id: 1200});
+CREATE (d2:Department {department_id: 20, department_name: "Marketing", manager_id: 201, location_id: 1200});
+CREATE (d3:Department {department_id: 30, department_name: "Purchasing", manager_id: 114, location_id: 1200});
+CREATE (d4:Department {department_id: 60, department_name: "IT", manager_id: 103, location_id: 1200});
+
+// Jobs
+CREATE (j1:Job {job_id: "AD_PRES", job_title: "President", min_salary: 20080, max_salary: 40000});
+CREATE (j2:Job {job_id: "AD_VP", job_title: "Administration Vice President", min_salary: 15000, max_salary: 30000});
+
+
+
+
+CREATE (j3:Job {job_id: "IT_PROG", job_title: "Programmer", min_salary: 4000, max_salary: 10000});
+
+// Employees
+CREATE (e1:Employee {employee_id: 100, first_name: "Steven", last_name: "King", email: "SKING", phone_number: "515.123.4567", hire_date: date("2003-06-17"), job_id: "AD_PRES", salary: 24000, commission_pct: null, manager_id: null, department_id: 90});
+CREATE (e2:Employee {employee_id: 101, first_name: "Neena", last_name: "Kochhar", email: "NKOCHHAR", phone_number: "515.123.4568", hire_date: date("2005-09-21"), job_id: "AD_VP", salary: 17000, commission_pct: null, manager_id: 100, department_id: 90});
+CREATE (e3:Employee {employee_id: 103, first_name: "Alexander", last_name: "Hunold", email: "AHUNOLD", phone_number: "590.423.4569", hire_date: date("2006-01-03"), job_id: "IT_PROG", salary: 9000, commission_pct: null, manager_id: 102, department_id: 60});
+
+// Job History (requires creating nodes for each job history entry)
+CREATE (jh1:JobHistory {employee_id: 101, start_date: date("1989-09-21"), end_date: date("1993-10-27"), job_id: "AC_MGR", department_id: 110});
+
+// Create Relationships
+
+// Regions -> Countries
+MATCH (r:Region), (c:Country) WHERE c.region_id = r.region_id
+CREATE (c)-[:PART_OF]->(r);
+
+// Countries -> Locations
+MATCH (c:Country), (l:Location) WHERE l.country_id = c.country_id
+CREATE (l)-[:LOCATED_IN]->(c);
+
+// Locations -> Departments
+MATCH (l:Location), (d:Department) WHERE d.location_id = l.location_id
+CREATE (d)-[:LOCATED_AT]->(l);
+
+// Departments -> Employees (manager)
+MATCH (d:Department), (e:Employee) WHERE d.manager_id = e.employee_id
+CREATE (d)-[:MANAGED_BY]->(e);
+
+// Departments -> Employees (works in)
+MATCH (d:Department), (e:Employee) WHERE e.department_id = d.department_id
+CREATE (e)-[:WORKS_IN]->(d);
+
+// Employees -> Jobs
+MATCH (e:Employee), (j:Job) WHERE e.job_id = j.job_id
+CREATE (e)-[:HAS_JOB]->(j);
+
+//JobHistory -> Employees
+MATCH (jh:JobHistory), (e:Employee) WHERE jh.employee_id = e.employee_id
+CREATE (jh)-[:EMPLOYEE_HISTORY]->(e);
+
+//JobHistory -> Jobs
+MATCH (jh:JobHistory), (j:Job) WHERE jh.job_id = j.job_id
+CREATE (jh)-[:JOB_HISTORY]->(j);
+
+//JobHistory -> Departments
+MATCH (jh:JobHistory), (d:Department) WHERE jh.department_id = d.department_id
+CREATE (jh)-[:DEPARTMENT_HISTORY]->(d);
+
+// Example Query: Find employees in the "IT" department.
+MATCH (e:Employee)-[:WORKS_IN]->(d:Department)
+WHERE d.department_name = "IT"
+RETURN e;
+
+// Example Query: Find the location of the "IT" department.
+MATCH (d:Department)-[:LOCATED_AT]->(l:Location)
+WHERE d.department_name = "IT"
+RETURN l;
+
+// Example Query: Find employees who are managed by Steven King
+MATCH (e:Employee)<-[:MANAGED_BY]-(d:Department)-[:WORKS_IN]->(e2:Employee)
+WHERE e.first_name = "Steven" AND e.last_name = "King"
+RETURN e2;
