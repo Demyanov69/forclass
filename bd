@@ -139,3 +139,51 @@ Here's the table with the converted queries:
 | select a.deptno, b.ename from dept a, emp b                             | MATCH (a:Department), (b:Employee) RETURN a.deptno, b.ename                           |
 | Select * from dept join emp on dept.deptno = emp.deptno where emp.ename = 'SMITH';                 | MATCH (e:Employee {ename: 'SMITH'})-[:WORKS_IN]->(d:Department) RETURN d, e                                 |
 | SELECT * from EMP WHERE SAL>2500;
+
+
+Okay, let's complete the conversion of the SQL queries in the image to Neo4j Cypher.
+
+| SQL                                                 | Neo4j                                                                                                   |
+| :-------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SELECT * from EMP WHERE SAL>3000;                               | MATCH (e:Employee) WHERE e.sal > 3000 RETURN e                                                                             |
+| SELECT DEPTNO, DNAME, LOC from DEPT;                               | MATCH (d:Department) RETURN d.deptno, d.dname, d.loc                                                                           |
+
+Now, these next three SQL examples are challenging. SQL's UNION, INTERSECT, and JOIN don't translate directly to single Cypher queries in all cases, especially when you need to do complex combinations of projections. Cypher doesn't have explicit UNION or INTERSECT operators that work exactly like SQL. These often require multiple queries or more complex constructs involving APOC procedures. Since they involve combining outputs from different node types with potentially different properties into a single output, they require either: 1. returning the data separately or 2. converting the data into a common map format and then returning the maps
+
+•  SELECT ENAME,DEPTNO from EMP UNION SELECT DEPTNO,DNAME, LOC from DEPT;: This query mixes different data types for columns. Assuming that we have EMP with columns ENAME, DEPTNO and DEPT with columns DEPTNO, DNAME and LOC
+    // Return two distinct sets of information - one for Employees, one for Departments
+    // You'd process the results separately in the application
+    MATCH (e:Employee) RETURN e.ename AS ename, e.deptno AS deptno, null AS dname, null AS loc
+    UNION ALL
+    MATCH (d:Department) RETURN null AS ename, d.deptno AS deptno, d.dname AS dname, d.loc AS loc
+This would return a single table with the first set being emp info and the second being dept info. The alternative would be to return two distinct sets of results
+
+•   SELECT DEPTNO from EMP UNION SELECT DEPTNO from DEPT;: Here, we can use UNION ALL and then DISTINCT. In general in cypher we use UNION ALL to ensure no data is lost in the process and rely on other clauses such as DISTINCT to deal with redundant data.
+    MATCH (e:Employee) RETURN e.deptno as deptno
+    UNION ALL
+    MATCH (d:Department) RETURN d.deptno as deptno
+ChatGPT4 | Midjourney:
+*  SELECT DEPTNO from EMP INTERSECT SELECT DEPTNO from DEPT;: This is the toughest. In SQL, this gives the values found in both tables. In Neo4j, we generally work by creating relationships. I have to assume it should be rewritten using that paradigm, returning all relationships named "WORKS_IN"
+
+    MATCH (e:Employee)-[r:WORKS_IN]->(d:Department)
+    RETURN DISTINCT r
+
+However, the question asks for an exact result. Unfortunately this requires a procedure for doing this in neo4j:
+
+    // Requires APOC
+    CALL apoc.coll.intersection([
+        [x IN collect(e.deptno) | x IN MATCH (e:Employee) RETURN e.deptno],
+        [x IN collect(d.deptno) | x IN MATCH (d:Department) RETURN d.deptno]
+    ])
+    YIELD value AS intersection
+    RETURN intersection
+
+Alternatively, you can collect results and work with them within an application, comparing those results and returning them.
+
+•  SELECT \* from DEPT, EMP WHERE SAL>3000;: We already covered the general cartesian product in Neo4j. However, you'll likely want to change it to involve the sal value.
+
+MATCH (e:Employee) WHERE e.sal > 3000
+MATCH (d:Department)
+RETURN e, d
+
+These are the closest direct translations I can provide given the tools. Certain operations in SQL, especially set-based operations like UNION and INTERSECT, don't have a direct, clean equivalent in Cypher, and the best way to handle them often depends on the specific use case and your overall data model.
