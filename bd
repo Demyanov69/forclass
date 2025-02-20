@@ -187,3 +187,82 @@ MATCH (d:Department)
 RETURN e, d
 
 These are the closest direct translations I can provide given the tools. Certain operations in SQL, especially set-based operations like UNION and INTERSECT, don't have a direct, clean equivalent in Cypher, and the best way to handle them often depends on the specific use case and your overall data model.
+
+
+
+
+
+Okay, let's translate those SQL queries into their Neo4j Cypher equivalents.  I will assume that EMP and DEPT are node labels in Neo4j, and the attributes are node properties.
+
+1. Projection (π): SELECT DISTINCT ENAME, DEPTNO from EMP;
+MATCH (e:EMP)
+RETURN DISTINCT e.ENAME, e.DEPTNO
+
+
+2.  SELECT DISTINCT DEPTNO, ENAME from EMP;
+MATCH (e:EMP)
+RETURN DISTINCT e.DEPTNO, e.ENAME
+
+
+3. SELECT DISTINCT DEPTNO from EMP;
+MATCH (e:EMP)
+RETURN DISTINCT e.DEPTNO
+
+
+4. Product (x): SELECT * from EMP, DEPT;
+MATCH (e:EMP), (d:DEPT)
+RETURN e, d
+
+
+5. Union (U): SELECT DEPTNO, DNAME, LOC from DEPT;
+MATCH (d:DEPT)
+RETURN d.DEPTNO, d.DNAME, d.LOC
+
+
+6.  SELECT ENAME, DEPTNO from EMP UNION SELECT DEPTNO, DNAME, LOC from DEPT;
+
+This is tricky because the columns are different.  Neo4j doesn't have a direct equivalent of UNION with different columns in the way SQL does.  The closest would be to return a map with nulls where values are missing:
+UNION ALL
+MATCH (d:DEPT)
+RETURN  d.DEPTNO AS DEPTNO, NULL AS ENAME, d.DNAME AS DNAME, d.LOC AS LOC
+
+
+7.  SELECT DEPTNO from EMP UNION SELECT DEPTNO from DEPT;
+MATCH (e:EMP)
+RETURN e.DEPTNO AS DEPTNO
+UNION
+MATCH (d:DEPT)
+RETURN d.DEPTNO AS DEPTNO
+
+
+8. Intersection (∩): SELECT DEPTNO from EMP INTERSECT SELECT DEPTNO from DEPT;
+
+Neo4j doesn't have a direct INTERSECT keyword. You can achieve this using a WHERE clause with IN:
+MATCH (e:EMP)
+WHERE e.DEPTNO IN [MATCH (d:DEPT) RETURN d.DEPTNO]
+RETURN DISTINCT e.DEPTNO
+
+
+9. Join (⨝): SELECT * from DEPT, EMP where SAL > 3000;
+
+It's important to note here that the original SQL misses a join condition to link EMP and DEPT. The code below assumes that we want to find the products with sal>3000 without join conditon
+MATCH (e:EMP), (d:DEPT)
+WHERE e.SAL > 3000
+RETURN e, d
+
+
+Important Considerations:
+
+•   Data Model:  These translations assume a simple node-based representation. A more realistic scenario would involve relationships between EMP and DEPT nodes (e.g., a WORKS_IN relationship).
+•   UNION vs. UNION ALL:  I've used UNION where the original SQL implies it (to remove duplicates).  If you want all results, including duplicates, use UNION ALL.  In Neo4j, UNION ALL is significantly faster.
+•   Performance:  For large datasets, these queries might need optimization.  Creating indexes on frequently accessed properties (like DEPTNO, ENAME, SAL, etc.) will improve performance.
+
+Remember to adapt these queries to your specific data model and requirements. If the two data set needs to be joined on DEPTNO, then we can change 9. Join to the following:
+
+9. Join (⨝) Updated: SELECT * from DEPT, EMP where EMP.DEPTNO=DEPT.DEPTNO and SAL > 3000;
+It's important to note here that the original SQL misses a join condition to link EMP and DEPT. The code below assumes that we want to find the products with sal>3000 and the employees and departments are joined by the DEPTNO.
+MATCH (e:EMP)-[:WORKS_IN]->(d:DEPT)
+WHERE e.SAL > 3000
+RETURN e, d
+
+The :WORKS_IN relation should connect the employees with their departments.
