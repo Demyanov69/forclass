@@ -111,3 +111,31 @@ RETURN l;
 MATCH (e:Employee)<-[:MANAGED_BY]-(d:Department)-[:WORKS_IN]->(e2:Employee)
 WHERE e.first_name = "Steven" AND e.last_name = "King"
 RETURN e2;
+
+
+Okay, let's convert the SQL queries in the image to Neo4j Cypher queries. I'll fill in the ? placeholders with the corresponding Cypher. I'll assume that the schema is such that:
+
+•   Employee nodes have properties like empno, ename, sal, deptno.
+•   Department nodes have properties like deptno, dname.
+•   There is a relationship WORKS_IN between Employee and Department nodes, or WORKS_FOR. I will assume the presence of a WORKS_IN relationship between an Employee and their Department.
+
+Here's the table with the converted queries:
+
+| SQL                                                                         | Neo4j                                                                                     |
+| :-------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------ |
+| select * from emp;                                                        | MATCH (a:Employee) RETURN a                                                                |
+| select * from dept;                                                       | MATCH (a:Department) RETURN a                                                              |
+| select ename, sal from emp;                                               | MATCH (a:Employee) RETURN a.ename, a.sal                                                  |
+| Select ename from emp;                                                    | MATCH (a:Employee) RETURN a.ename                                                         |
+| Select * from emp where ename = 'SMITH';                                 | MATCH (a:Employee {ename: 'SMITH'}) RETURN a                                           |
+| Select * from emp where empno in (7369, 15, 46, 16);                    | MATCH (a:Employee) WHERE a.empno IN [7369, 15, 46, 16] RETURN a                         |
+| Select dept.deptno, emp.empno from dept join emp on dept.deptno = emp.deptno where dname = 'ACCOUNTING'; | MATCH (d:Department {dname: 'ACCOUNTING'})<-[:WORKS_IN]-(e:Employee) RETURN d.deptno, e.empno |
+| Select dept.deptno, emp.empno from dept join emp on dept.deptno = emp.deptno where dname = 'WORKS';   | MATCH (d:Department {dname: 'WORKS'})<-[:WORKS_IN]-(e:Employee) RETURN d.deptno, e.empno|
+| Select * from dept join emp on dept.deptno = emp.deptno where dname = 'ACCOUNTING';                    | MATCH (d:Department {dname: 'ACCOUNTING'})<-[:WORKS_IN]-(e:Employee) RETURN d, e  |
+| Select * from dept join emp on dept.deptno = emp.deptno where dname = 'RESEARCH';                   | MATCH (d:Department {dname: 'RESEARCH'})<-[:WORKS_IN]-(e:Employee) RETURN d, e         |
+| Select * from emp join dept on emp.empno = 7369 and dept.deptno = 20;     | MATCH (e:Employee {empno: 7369})-[r:WORKS_IN]->(d:Department {deptno: 20}) RETURN e,d         |
+| select a.deptno, b.ename from dept a, emp b                             | MATCH (a:Department), (b:Employee) RETURN a.deptno, b.ename                           |
+| Select a, b from dept a, emp b;                                        | MATCH (a:Department), (b:Employee) RETURN a, b                                        |
+| select a.deptno, b.ename from dept a, emp b                             | MATCH (a:Department), (b:Employee) RETURN a.deptno, b.ename                           |
+| Select * from dept join emp on dept.deptno = emp.deptno where emp.ename = 'SMITH';                 | MATCH (e:Employee {ename: 'SMITH'})-[:WORKS_IN]->(d:Department) RETURN d, e                                 |
+| SELECT * from EMP WHERE SAL>2500;
