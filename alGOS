@@ -1,0 +1,117 @@
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <cstdlib>
+#include <ctime>
+
+using namespace std;
+
+int partition(vector<int>& arr, int low, int high, long long& operationCount) {
+    int pivot = arr[(low + high) / 2]; 
+    while (low <= high) {
+        while (arr[low] < pivot) {
+            low++;
+            operationCount++;
+        }
+        while (arr[high] > pivot) {
+            high--;
+            operationCount++;
+        }
+        if (low <= high) {
+            swap(arr[low], arr[high]);
+            low++;
+            high--;
+            operationCount += 3; 
+        }
+    }
+    return low;
+}
+
+void quickSort(vector<int>& arr, int low, int high, long long& operationCount) {
+    if (low < high) {
+        int index = partition(arr, low, high, operationCount);
+        quickSort(arr, low, index - 1, operationCount);
+        quickSort(arr, index, high, operationCount);
+    }
+}
+
+void initializeMinArray(vector<int>& arr, int n) {
+    arr.resize(n);
+    for (int i = 0; i < n; i++) {
+        arr[i] = i;
+    }
+}
+
+void initializeMaxArray(vector<int>& arr, int n) {
+    arr.resize(n);
+    for (int i = 0; i < n; i++) {
+        arr[i] = n - i; 
+    }
+}
+
+void initializeRandomArray(vector<int>& arr, int n) {
+    arr.resize(n);
+    for (int i = 0; i < n; i++) {
+        arr[i] = rand() % 10000; 
+    }
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    srand(static_cast<unsigned int>(time(0)));
+    ofstream minFile("C:/Users/Виктория/Desktop/min.txt");
+    ofstream maxFile("C:/Users/Виктория/Desktop/max.txt");
+    ofstream meanFile("C:/Users/Виктория/Desktop/mean.txt");
+
+    if (!minFile.is_open() || !maxFile.is_open() || !meanFile.is_open()) {
+        cerr << "Ошибка открытия файлов!" << endl;
+        return 1;
+    }
+
+    for (int n = 100; n <= 10000; n += 100) {
+        long long minOperations = 0, maxOperations = 0, meanOperations = 0;
+
+        // Минимальная сложность
+        vector<int> minArray;
+        initializeMinArray(minArray, n);
+        long long operationCount = 0;
+        quickSort(minArray, 0, n - 1, operationCount);
+        minOperations = operationCount;
+
+        // Максимальная сложность
+        vector<int> maxArray;
+        initializeMaxArray(maxArray, n);
+        operationCount = 0;
+        quickSort(maxArray, 0, n - 1, operationCount);
+        maxOperations = operationCount;
+
+        // Средняя сложность
+        const int iterations = 50; 
+        for (int k = 0; k < iterations; k++) {
+            vector<int> randomArray;
+            initializeRandomArray(randomArray, n);
+            operationCount = 0;
+            quickSort(randomArray, 0, n - 1, operationCount);
+            meanOperations += operationCount;
+        }
+
+        if (meanOperations > 0) {
+            meanOperations /= iterations; 
+        }
+        else {
+            meanOperations = minOperations;
+        }
+
+        minFile << n << " " << minOperations << endl;
+        maxFile << n << " " << maxOperations << endl;
+        meanFile << n << " " << meanOperations << endl;
+
+        cout << "Завершено n = " << n << endl;
+    }
+
+    minFile.close();
+    maxFile.close();
+    meanFile.close();
+
+    return 0;
+}
