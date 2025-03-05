@@ -11,7 +11,7 @@ db.teachers.insertOne({
   position: "Доцент"
 })
 
-let teacher_id = db.teachers.findOne({name: "Иванов Иван Иванович"})._id
+let teacher_id = db.teachers.findOne({name: "Иванов Иван Иванович"})._id;
 
 db.subjects.insertOne({
   name: "Матанализ",
@@ -19,7 +19,7 @@ db.subjects.insertOne({
   description: "Курс высшей математики."
 })
 
-let subject_id = db.subjects.findOne({name: "Высшая математика"})._id;
+let subject_id = db.subjects.findOne({name: "Матанализ"})._id;
 
 db.groups.insertOne({
   name: "25",
@@ -27,7 +27,7 @@ db.groups.insertOne({
   speciality: "Матобесы"
 })
 
-let group_id = db.groups.findOne({name: "ИВТ-21"})._id;
+let group_id = db.groups.findOne({name: "25"})._id;
 
 db.students.insertOne({
   name: "Петров Петр Петрович",
