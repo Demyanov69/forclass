@@ -1,0 +1,72 @@
+
+db.createCollection("subjects")
+db.createCollection("groups")
+db.createCollection("students")
+db.createCollection("lessons")
+db.createCollection("attendances")
+db.createCollection("teachers")
+
+db.teachers.insertOne({
+  name: "Иванов Иван Иванович",
+  position: "Доцент"
+})
+
+let teacher_id = db.teachers.findOne({name: "Иванов Иван Иванович"})._id
+
+db.subjects.insertOne({
+  name: "Матанализ",
+  teacher_id: teacher_id,
+  description: "Курс высшей математики."
+})
+
+let subject_id = db.subjects.findOne({name: "Высшая математика"})._id;
+
+db.groups.insertOne({
+  name: "25",
+  faculty: "ФКТиПМ",
+  speciality: "Матобесы"
+})
+
+let group_id = db.groups.findOne({name: "ИВТ-21"})._id;
+
+db.students.insertOne({
+  name: "Петров Петр Петрович",
+  group_id: group_id,
+  student_id: "12345"
+})
+
+db.students.insertOne({
+    name: "Сидоров Сидор Сидорович",
+    group_id: group_id,
+    student_id: "54321"
+})
+
+let student1_id = db.students.findOne({name: "Петров Петр Петрович"})._id;
+let student2_id = db.students.findOne({name: "Сидоров Сидор Сидорович"})._id;
+
+db.lessons.insertOne({
+  subject_id: subject_id,
+  group_id: group_id,
+  date: new Date("2023-10-26"),
+  topic: "Введение в математический анализ"
+})
+
+let lesson_id = db.lessons.findOne({date: new Date("2023-10-26")})._id;
+
+db.attendances.insertOne({
+  lesson_id: lesson_id,
+  student_id: student1_id,
+  attendance_status: "+",
+  note: ""
+})
+
+db.attendances.insertOne({
+    lesson_id: lesson_id,
+    student_id: student2_id,
+    attendance_status: "-",
+    note: "Болел"
+})
+
+db.students.find()
+db.lessons.find()
+db.attendances.find()
