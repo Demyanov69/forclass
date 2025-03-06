@@ -60,3 +60,138 @@ db.dept.aggregate([
 •   JOIN WHERE: MongoDB Aggregate с Lookup для условного объединения
 
 Приведенные примеры дают представление о том, как можно преобразовать запросы SQL в MongoDB. Важно понимать, что MongoDB - это NoSQL база данных, и она работает иначе, чем реляционные базы данных, поэтому не всегда можно найти прямое соответствие между запросами.
+
+
+
+
+db.emp.aggregate([
+  {
+    $lookup: {
+      from: "dept",
+      as: "dept_data"
+    }
+  },
+  {
+    $unwind: {
+      path: "$dept_data",
+      preserveNullAndEmptyArrays: true
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      emp: "$$ROOT",
+      dept: "$dept_data"
+    }
+  }
+])
+
+
+
+2. ОБЪЕДИНЕНИЕ (UNION) (U): SELECT DEPTNO,DNAME, LOC from DEPT;
+db.dept.find({}, { DEPTNO: 1, DNAME: 1, LOC: 1, _id: 0 })
+
+
+// 1. SELECT ENAME,DEPTNO from EMP UNION SELECT DEPTNO,DNAME, LOC from DEPT;
+
+// Первый запрос:
+db.emp.find({}, {ENAME: 1, DEPTNO: 1, _id: 0}).toArray().then(emps => {
+    // Второй запрос:
+    db.dept.find({}, {DEPTNO: 1, DNAME: 1, LOC: 1, _id: 0}).toArray().then(depts => {
+        // Объединение результатов на стороне клиента (приложения):
+        const combined = [...emps, ...depts];
+        console.log(combined);
+    });
+});
+// MongoDB 4.4+ с $unionWith (если коллекции имеют совместимые схемы):
+
+db.collection("union_result").aggregate([
+    {
+        $unionWith: {
+            coll: "dept"
+        }
+    },
+    {
+        $project: {
+            ENAME: {
+                $ifNull: ["$ENAME", null]
+            },
+            DEPTNO: {
+                $ifNull: ["$DEPTNO", null]
+            },
+            DNAME: {
+                $ifNull: ["$DNAME", null]
+            },
+            LOC: {
+                $ifNull: ["$LOC", null]
+            }
+        }
+    }
+]).toArray()
+
+// 2. SELECT DEPTNO from EMP UNION SELECT DEPTNO from DEPT;
+// Первый запрос:
+
+db.emp.distinct("DEPTNO").then(empDeptnos => {
+   // Второй запрос:
+   db.dept.distinct("DEPTNO").then(deptDeptnos => {
+       // Объединение и удаление дубликатов на стороне клиента (приложения):
+       const combined = [...new Set([...empDeptnos, ...deptDeptnos])];
+       console.log(combined);
+   });
+});
+
+// MongoDB 4.4+ с $unionWith:
+
+db.collection("union_result").aggregate([
+    {
+        $unionWith: {
+            coll: "dept"
+        }
+    },
+    {
+        $group: {
+            _id: "$DEPTNO"
+        }
+    },
+    {
+        $project: {
+            DEPTNO: "$_id",
+            _id: 0
+        }
+    }
+]).toArray()
+// 3. ПЕРЕСЕЧЕНИЕ(INTERSECT) (∩): SELECT DEPTNO from EMP INTERSECT SELECT DEPTNO from DEPT;
+
+// Первый запрос:
+db.emp.distinct("DEPTNO").then(empDeptnos => {
+   // Второй запрос:
+   db.dept.distinct("DEPTNO").then(deptDeptnos => {
+       // Нахождение пересечения на стороне клиента (приложения):
+       const intersection = empDeptnos.filter(deptno => deptDeptnos.includes(deptno));
+       console.log(intersection);
+   });
+});
+
+// Через aggregate:
+db.emp.aggregate([
+    {
+        $lookup: {
+            from: "dept",
+            localField: "DEPTNO",
+            foreignField: "DEPTNO",
+            as: "matching_dept"
+        }
+    },
+    {
+        $match: {
+            "matching_dept": { $ne: [] }
+        }
+    },
+    {
+        $project: {
+            DEPTNO: 1,
+            _id: 0
+        }
+    }
+]).toArray()
