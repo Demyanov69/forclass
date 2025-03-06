@@ -15,3 +15,26 @@
 | Select * from emp join dept on emp.empno = 7369 and dept.deptno = 20;                              | db.emp.aggregate([{$match: {empno: 7369}}, {$lookup: {from: "dept", let: {emp_deptno: 20}, pipeline: [{$match: {$expr: {$eq: ["$$emp_deptno", "$deptno"]}}}], as: "dept_data"}}]) |
 | select a.deptno, b.ename from dept a, emp b;                   | db.dept.aggregate([ { $lookup: { from: "emp", as: "emp_data" } }, { $unwind: "$emp_data" }, { $project: { _id: 0, deptno: "$deptno", ename: "$emp_data.ename" } }]) |
 | Select a, b from dept a, emp b;
+
+
+Вот заполненная таблица с преобразованиями запросов SQL в MongoDB:
+
+| SQL                                                              | MongoDB                                                                                                                                                           |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| select a.deptno, b.ename from dept a, emp b;                    | db.dept.aggregate([ { $lookup: { from: "emp", as: "emp_data" } }, { $unwind: "$emp_data" }, { $project: { _id: 0, deptno: "$deptno", ename: "$emp_data.ename" } }]) |
+| Select * from dept join emp on dept.deptno = emp.deptno where emp.ename = 'SMITH';               | db.dept.aggregate([{ $lookup: { from: "emp", let: { deptno: "$deptno" }, pipeline: [ { $match: { $expr: { $and: [ { $eq: [ "$deptno", "$$deptno" ] }, { $eq: [ "$ename", "SMITH" ] } ] } } } ], as: "emp_data" } }]) |
+| SELECT * from EMP WHERE SAL>2500;                                | db.emp.find({SAL: {$gt: 2500}})                                                                                                                                            |
+| SELECT DISTINCT ENAME, DEPTNO from EMP;                         | db.emp.aggregate([{$group: {_id: {ename: "$ename", deptno: "$deptno"}}}, {$project: {_id: 0, ename: "$_id.ename", deptno: "$_id.deptno"}}])                     |
+| SELECT * from EMP, DEPT;     | *Product (Cartesian Join) is not well supported directly in MongoDB.*                                                                                                        |
+| SELECT DEPTNO,DNAME, LOC from DEPT UNION SELECT ENAME,DEPTNO from EMP UNION SELECT DEPTNO,DNAME, LOC from DEPT;              | *MongoDB не имеет встроенной операции UNION, но можно достичь похожего результата используя последовательные запросы find и merge*       |
+| SELECT DEPTNO from EMP INTERSECT SELECT DEPTNO from DEPT;      |   *Интерсект не реализован в MongoDB напрямую. Агрегация с $lookup или $in может имитировать*      |
+| SELECT * from DEPT, EMP WHERE SAL>3000;  |  db.dept.aggregate([{ $lookup: { from: "emp", as: "emp_data" } }, { $unwind: "$emp_data" }, { $match:{"emp_data.SAL": { $gt: 3000}} }])                  |
+
+Пояснения:
+
+•   Декартово произведение (PRODUCT):  В MongoDB нет прямой поддержки операции декартового произведения (Cartesian Join) как в SQL. Чтобы получить аналогичный результат, потребовалось бы написать более сложный агрегационный конвейер, который был бы неэффективен для больших объемов данных.
+•   UNION:  В MongoDB нет встроенной операции UNION, как в SQL. Вместо этого можно выполнить отдельные запросы для каждой части UNION и затем объединить результаты на стороне приложения. MongoDB 4.4+ предлагает $unionWith, который можно использовать для более простого объединения коллекций, но он требует, чтобы схемы коллекций были совместимыми.
+•   INTERSECT:  MongoDB не имеет встроенной операции INTERSECT. Чтобы имитировать INTERSECT, можно использовать $lookup или $in в агрегационном конвейере.
+•   JOIN WHERE: MongoDB Aggregate с Lookup для условного объединения
+
+Приведенные примеры дают представление о том, как можно преобразовать запросы SQL в MongoDB. Важно понимать, что MongoDB - это NoSQL база данных, и она работает иначе, чем реляционные базы данных, поэтому не всегда можно найти прямое соответствие между запросами.
