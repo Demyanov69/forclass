@@ -1,3 +1,25 @@
+db.dept.aggregate([
+  {
+    $lookup: {
+      from: "emp",
+      as: "emp_data"
+    }
+  },
+  {
+    $unwind: {
+      path: "$emp_data",
+      preserveNullAndEmptyArrays: true  // Чтобы не отбрасывать отделы без сотрудников
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      dept: "$$ROOT",
+      emp: "$emp_data"
+    }
+  }
+])
+
 Здесь таблица с преобразованными запросами SQL в MongoDB:
 
 | SQL                                                            | MongoDB                                                                                                                                           |
