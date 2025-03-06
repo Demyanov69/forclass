@@ -1,72 +1,17 @@
+Здесь таблица с преобразованными запросами SQL в MongoDB:
 
-db.createCollection("subjects")
-db.createCollection("groups")
-db.createCollection("students")
-db.createCollection("lessons")
-db.createCollection("attendances")
-db.createCollection("teachers")
-
-db.teachers.insertOne({
-  name: "Иванов Иван Иванович",
-  position: "Доцент"
-})
-
-let teacher_id = db.teachers.findOne({name: "Иванов Иван Иванович"})._id;
-
-db.subjects.insertOne({
-  name: "Матанализ",
-  teacher_id: teacher_id,
-  description: "Курс высшей математики."
-})
-
-let subject_id = db.subjects.findOne({name: "Матанализ"})._id;
-
-db.groups.insertOne({
-  name: "25",
-  faculty: "ФКТиПМ",
-  speciality: "Матобесы"
-})
-
-let group_id = db.groups.findOne({name: "25"})._id;
-
-db.students.insertOne({
-  name: "Петров Петр Петрович",
-  group_id: group_id,
-  student_id: "12345"
-})
-
-db.students.insertOne({
-    name: "Сидоров Сидор Сидорович",
-    group_id: group_id,
-    student_id: "54321"
-})
-
-let student1_id = db.students.findOne({name: "Петров Петр Петрович"})._id;
-let student2_id = db.students.findOne({name: "Сидоров Сидор Сидорович"})._id;
-
-db.lessons.insertOne({
-  subject_id: subject_id,
-  group_id: group_id,
-  date: new Date("2023-10-26"),
-  topic: "Введение в математический анализ"
-})
-
-let lesson_id = db.lessons.findOne({date: new Date("2023-10-26")})._id;
-
-db.attendances.insertOne({
-  lesson_id: lesson_id,
-  student_id: student1_id,
-  attendance_status: "+",
-  note: ""
-})
-
-db.attendances.insertOne({
-    lesson_id: lesson_id,
-    student_id: student2_id,
-    attendance_status: "-",
-    note: "Болел"
-})
-
-db.students.find()
-db.lessons.find()
-db.attendances.find()
+| SQL                                                            | MongoDB                                                                                                                                           |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| select * from emp;                                          | db.emp.find()                                                                                                                                    |
+| select * from dept;                                         | db.dept.find()                                                                                                                                   |
+| select ename, sal from emp;                                  | db.emp.find({}, {ename: 1, sal: 1, _id: 0})                                                                                                     |
+| select ename from emp;                                         | db.emp.find({}, {ename: 1, _id: 0})                                                                                                     |
+| Select * from emp where ename = 'SMITH';                     | db.emp.find({ename: 'SMITH'})                                                                                                                    |
+| Select * from emp where empno in (7369, 15, 46, 16);       | db.emp.find({empno: {$in: [7369, 15, 46, 16]}})                                                                                                 |
+| Select dept.deptno, emp.empno from dept join emp on dept.deptno = emp.deptno where dname = 'ACCOUNTING'; | db.dept.aggregate([ { $match: { dname: "ACCOUNTING" } }, { $lookup: { from: "emp", localField: "deptno", foreignField: "deptno", as: "emp_data" } }, { $unwind: "$emp_data" }, { $project: { _id: 0, deptno: 1, empno: "$emp_data.empno" } } ]) |
+| Select dept.deptno, emp.empno from dept join emp on dept.deptno = emp.deptno where dname = 'WORKS'; | db.dept.aggregate([ { $match: { dname: "WORKS" } }, { $lookup: { from: "emp", localField: "deptno", foreignField: "deptno", as: "emp_data" } }, { $unwind: "$emp_data" }, { $project: { _id: 0, deptno: 1, empno: "$emp_data.empno" } } ]) |
+| Select * from dept join emp on dept.deptno = emp.deptno where dname = 'ACCOUNTING';               | db.dept.aggregate([{ $match: { dname: "ACCOUNTING" } }, { $lookup: { from: "emp", localField: "deptno", foreignField: "deptno", as: "emp_data" } }])                                              |
+| Select * from dept join emp on dept.deptno = emp.deptno where dname = 'RESEARCH';               | db.dept.aggregate([{ $match: { dname: "RESEARCH" } }, { $lookup: { from: "emp", localField: "deptno", foreignField: "deptno", as: "emp_data" } }])                                              |
+| Select * from emp join dept on emp.empno = 7369 and dept.deptno = 20;                              | db.emp.aggregate([{$match: {empno: 7369}}, {$lookup: {from: "dept", let: {emp_deptno: 20}, pipeline: [{$match: {$expr: {$eq: ["$$emp_deptno", "$deptno"]}}}], as: "dept_data"}}]) |
+| select a.deptno, b.ename from dept a, emp b;                   | db.dept.aggregate([ { $lookup: { from: "emp", as: "emp_data" } }, { $unwind: "$emp_data" }, { $project: { _id: 0, deptno: "$deptno", ename: "$emp_data.ename" } }]) |
+| Select a, b from dept a, emp b;
