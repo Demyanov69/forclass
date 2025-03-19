@@ -1,3 +1,33 @@
+-- 1. Вывести фамилии сотрудников, работающих в городе Нью-Йорке.
+SELECT E.ENAME
+FROM EMP E
+JOIN DEPT D ON E.DEPTNO = D.DEPTNO
+WHERE D.LOC = 'Нью-Йорк';
+
+-- 2. Вывести фамилии сотрудников, которые получают больше, чем их непосредственные руководители.
+SELECT E.ENAME
+FROM EMP E
+JOIN EMP M ON E.MGR = M.EMPNO
+WHERE E.SAL > M.SAL;
+
+-- 3. Вывести фамилии сотрудников из отделов, где работает больше трёх человек.
+SELECT E.ENAME
+FROM EMP E
+WHERE E.DEPTNO IN (SELECT DEPTNO FROM EMP GROUP BY DEPTNO HAVING COUNT(*) > 3);
+
+-- 4. Вывести оклад для каждого сотрудника в пределах одного отдела, потом сумма окладов по отделу. Так для всех отделов. В конце - Итого по всей фирме.
+SELECT
+    DEPTNO,
+    ENAME,
+    SAL,
+    SUM(SAL) OVER (PARTITION BY DEPTNO) AS DEPT_TOTAL,
+    SUM(SAL) OVER () AS GRAND_TOTAL
+FROM
+    EMP
+ORDER BY
+    DEPTNO, ENAME;
+
+
 // Constraints for Unique IDs (Primary Keys)
 CREATE CONSTRAINT employee_id_unique IF NOT EXISTS
 FOR (e:Employee) REQUIRE e.employee_id IS UNIQUE;
