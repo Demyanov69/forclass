@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <algorithm> // для remove
 using namespace std;
 
 int p = 0;
@@ -46,12 +45,10 @@ bool parse_i() {
     }
 }
 
-bool parse_cf(); // Предварительное объявление
-
+bool parse_cf(); 
 bool parse_inv() {
     int sp = p;
 
-    // u~
     if (parse_u()) {
         if (p < s.length() && s[p] == '~') {
             p++;
@@ -62,7 +59,6 @@ bool parse_inv() {
         }
     }
 
-    // (cf)~
     sp = p;
     if (p < s.length() && s[p] == '(') {
         p++;
@@ -95,7 +91,7 @@ bool parse_cf() {
             }
         }
         else {
-            return true; // просто i — это допустимо
+            return true; 
         }
     }
     else {
@@ -107,10 +103,7 @@ bool parse_cf() {
 int main() {
     setlocale(LC_ALL, "rus");
     cout << "Строка: ";
-    getline(cin, s); // считываем всю строку
-
-    // удаляем пробелы
-    s.erase(remove(s.begin(), s.end(), ' '), s.end());
+    getline(cin, s); 
 
     p = 0;
     bool result = parse_cf();
