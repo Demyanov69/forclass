@@ -1,0 +1,63 @@
+Вот запросы, адаптированные для PostgreSQL, в виде простого текста:
+
+1.  Display Employee Name and Experience:
+      SELECT first_name, hire_date, FLOOR((EXTRACT(EPOCH FROM (NOW() - hire_date)) / (365.25 × 24 × 60 * 60))) AS years_of_experience
+   FROM employees;
+   
+
+2.  Display Employee Names Hired in 2001:
+      SELECT first_name, hire_date
+   FROM employees
+   WHERE TO_CHAR(hire_date, 'YYYY') = '2001';
+   
+
+3.  Display First and Last Name with Initial Capitalization:
+      SELECT INITCAP(first_name), INITCAP(last_name)
+   FROM employees;
+   
+
+4.  Display the First Word of Job Title:
+      SELECT job_title, SUBSTR(job_title, 1, STRPOS(job_title, ' ') - 1)
+   FROM jobs
+   WHERE STRPOS(job_title, ' ') > 0;
+   
+
+5.  Display Employee Names Where Last Name Contains 'b' After the 3rd Position:
+      SELECT first_name, last_name
+   FROM employees
+   WHERE STRPOS(last_name, 'b') > 3;
+   
+
+6.  Display First Name in Uppercase and Email in Lowercase Where First Name and Email Are the Same (Ignoring Case):
+      SELECT UPPER(first_name), LOWER(email)
+   FROM employees
+   WHERE UPPER(first_name) = UPPER(email);
+   
+
+7.  Display Employees Hired in the Current Year:
+      SELECT *
+   FROM employees
+   WHERE TO_CHAR(hire_date, 'YYYY') = TO_CHAR(NOW(), 'YYYY');
+   
+
+8.  Display the Number of Days Between the Current Date and January 1, 2011:
+      SELECT CURRENT_DATE - DATE('2011-01-01');
+   
+
+9.  Display the Number of Employees Hired in Each Month of the Current Year:
+      SELECT TO_CHAR(hire_date, 'MM'), COUNT(*)
+   FROM employees
+   WHERE TO_CHAR(hire_date, 'YYYY') = TO_CHAR(NOW(), 'YYYY')
+   GROUP BY TO_CHAR(hire_date, 'MM');
+   
+
+10. Display the Manager ID and Number of Employees Managed:
+      SELECT manager_id, COUNT(*)
+   FROM employees
+   GROUP BY manager_id;
+   
+
+11. Display Employee ID and the Maximum End Date from Job History:
+      SELECT employee_id, MAX(end_date)
+   FROM job_history
+   GROUP BY employee_id;
